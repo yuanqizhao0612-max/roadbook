@@ -1,0 +1,7 @@
+{
+  "name": "api-llm",
+  "version": "1.0.0",
+  "description": "路书 · DeepSeek LLM 代理（HTTP 访问服务）",
+  "main": "index.js",
+  "dependencies": {}
+}
