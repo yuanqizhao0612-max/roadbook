@@ -13,19 +13,23 @@ const DEEPSEEK_API = 'https://api.deepseek.com/v1/chat/completions'
 const DEFAULT_MODEL = 'deepseek-chat'
 
 function resolveKey(): string {
+  // 安全策略（2026-08-16 密钥泄露事故后）：
+  // - 不再内置任何 key（内置 key 会随 bundle 公开，任何人可提取盗刷）
+  // - 优先：构建期环境变量 VITE_DEEPSEEK_KEY（仅在本地私有构建时注入）
+  // - 其次：localStorage（roadbook_deepseek_key）— 现场演示时通过控制台注入自己的 key
+  // - 都没有 → 返回空串 → 调用走 fixture 回退，演示不崩但不耗真实 token
   const builtin = ((import.meta as any).env?.VITE_DEEPSEEK_KEY as string | undefined)?.trim() || ''
   if (builtin) return builtin
   try {
     const ls = localStorage.getItem('roadbook_deepseek_key')
     if (ls && ls.trim()) return ls.trim()
   } catch { /* ignore */ }
-  // 内置演示 key（赛后务必轮换作废）
-  return 'sk-REVOKED'
+  return ''
 }
 
-/** 是否启用真实大模型（始终 true，因为 key 已内置） */
+/** 是否启用真实大模型（仅当存在 key 时才启用） */
 export function llmEnabled(): boolean {
-  return true
+  return resolveKey().length > 0
 }
 
 export interface LlmMsg {

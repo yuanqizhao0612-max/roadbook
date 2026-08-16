@@ -12,8 +12,9 @@
 import http from 'node:http'
 
 const PORT = 8787
-// 你的当前有效 Key（也可改成从环境变量读：process.env.DEEPSEEK_API_KEY）
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-REVOKED'
+// 只从环境变量读取 key：启动前 export DEEPSEEK_API_KEY=sk-xxx
+// （2026-08-16 起禁止硬编码 key，防泄露被盗刷）
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || ''
 const UPSTREAM_TIMEOUT_MS = 20_000
 
 const server = http.createServer((req, res) => {

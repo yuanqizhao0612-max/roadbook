@@ -1,7 +1,8 @@
 // 验证 V0.9.4 递进式内容生成：InsightDistill → GrowthPath（含读过的书素材绑定）
 // 用法: node scripts/verify-content-flow.mjs
 const DEEPSEEK_API = 'https://api.deepseek.com/v1/chat/completions'
-const KEY = process.env.DEEPSEEK_KEY || 'sk-REVOKED'
+// 用法: DEEPSEEK_KEY=sk-xxx node scripts/verify-content-flow.mjs（禁止硬编码 key）
+const KEY = process.env.DEEPSEEK_KEY || ''
 
 async function call(system, userMsg) {
   const res = await fetch(DEEPSEEK_API, {
