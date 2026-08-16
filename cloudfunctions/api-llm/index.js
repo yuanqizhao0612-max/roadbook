@@ -5,6 +5,7 @@
 //       让前端优雅回退到本地 fixture，演示永不崩。
 // 部署：云开发控制台 → HTTP 访问服务 → 新增路径 /api-llm → 指向本函数
 // 密钥：在 config.json 的 env.DEEPSEEK_API_KEY 填入，或用环境变量注入。
+// 安全：① 密钥只存服务端，前端永不接触；② 轻量 IP 频率限制防公开 Demo 被白嫖。
 // ============================================================
 const https = require('https')
 const fs = require('fs')
@@ -30,6 +31,38 @@ const CORS = {
 function resp(statusCode, bodyObj) {
   // 集成响应格式：HTTP 访问服务会据此设置状态码/头/体
   return { statusCode, headers: CORS, body: JSON.stringify(bodyObj) }
+}
+
+// ------------------------------------------------------------
+// 轻量频率限制（best-effort，按客户端 IP 的 60s 滑动窗口）
+// 说明：函数实例级内存统计，能挡住「同一实例被单客户端猛刷」；
+// 跨实例/冷启动不完全精确，作为公开 Demo 的第一道低成本防线。
+// 真正的强限制可后续接入 CloudBase 数据库或网关层配额。
+// ------------------------------------------------------------
+const RATE = { windowMs: 60 * 1000, max: 30 } // 每 IP 每分钟最多 30 次
+const _hits = new Map() // ip -> [timestamp, ...]
+
+function getClientIp(headers) {
+  const h = {}
+  for (const k in (headers || {})) h[String(k).toLowerCase()] = headers[k]
+  return h['x-forwarded-for']?.split(',')[0]?.trim()
+    || h['x-real-ip']?.trim()
+    || h['x-client-ip']?.trim()
+    || 'unknown'
+}
+
+function rateLimited(ip) {
+  const now = Date.now()
+  const arr = (_hits.get(ip) || []).filter(t => now - t < RATE.windowMs)
+  arr.push(now)
+  _hits.set(ip, arr)
+  // 周期性清理，避免内存无限增长
+  if (_hits.size > 2000) {
+    for (const [k, v] of _hits) {
+      if (v[v.length - 1] < now - RATE.windowMs) _hits.delete(k)
+    }
+  }
+  return arr.length > RATE.max
 }
 
 function postJSON(url, data, timeoutMs) {
@@ -62,6 +95,12 @@ function postJSON(url, data, timeoutMs) {
 exports.main = async (event) => {
   const method = (event.httpMethod || (event.headers && (event.headers['x-method'] || event.headers['X-Method'])) || '').toUpperCase()
   if (method === 'OPTIONS') return resp(204, {})
+
+  // 频率限制（仅对真实请求生效，预检放行）
+  const ip = getClientIp(event.headers)
+  if (rateLimited(ip)) {
+    return resp(200, { reply: null, error: 'RATE_LIMITED' })
+  }
 
   const key = getKey()
   if (!key) return resp(200, { reply: null, error: 'NO_KEY' })

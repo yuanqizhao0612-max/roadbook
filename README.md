@@ -46,30 +46,28 @@ npm run preview    # 预览构建产物
 
 无任何外部依赖即可完整演示：人工智能内核为规则引擎 + 内置数据，未配置 LLM 时自动 demo 模式。
 
-## 四、点亮真实 AI（可选，DeepSeek）
+## 四、真实 AI（DeepSeek）· 默认即用，密钥只在服务端
 
-「与前人聊聊」「未来分岔」「路径指引」三个环节可接入真实大模型，让演示时"AI 是真的"。
+「与前人聊聊」「未来分岔」「路径指引」三个环节接入真实大模型，演示时"AI 是真的"。
 
 **设计铁律：任何失败（未配置 / 超时 / 调用失败）都自动回退到本地 fixture，现场演示永不崩。**
 
-### 方案 B（推荐）· 外部 Serverless 代理（约 1 分钟，不碰腾讯云控制台）
+### 线上 Demo 已默认点亮真 AI
+官方部署的 Demo（见顶部链接）已通过**腾讯云 CloudBase 网关云函数 `api-llm`** 接入 DeepSeek：
+前端默认请求 `https://<环境>.service.tcloudbase.com/api-llm`，**API Key 仅存于云端 `cloudfunctions/api-llm/config.json`，浏览器永不接触密钥**。评委 / 访客打开即用真 AI，无需任何配置。
 
-1. 打开 https://dash.cloudflare.com → Workers 和 Pages → 创建 Worker
-2. 清空代码框，粘贴 [`llm-proxy/worker-v2.js`](./llm-proxy/worker-v2.js) → 部署
-3. 设置 → 变量 → 添加 `DEEPSEEK_API_KEY`（值填你的 Key，建议加密）
-4. 得到 `https://roadbook-llm.<你的子域>.workers.dev`
-5. 在已部署的路书页面打开控制台（F12）执行：
-   ```js
-   localStorage.setItem('roadbook_llm_endpoint', 'https://roadbook-llm.<你的子域>.workers.dev')
-   ```
-   硬刷新（Cmd/Ctrl+Shift+R）即点亮。
+> 安全说明：早期版本曾把 Key 硬编码进前端 bundle 并在 GitHub 公开仓库暴露，导致被爬取盗刷（2026-08-16 事故）。现已彻底移除前端硬编码，Key 仅保留在云端，仓库历史也已重写清除残留。若需轮换，只改云端 `config.json` 并重新部署云函数即可，前端零改动。
 
-备选：`llm-proxy/vercel-api-llm.js` → Vercel Edge Function（放仓库 `api/llm.js`）；或方案 A 走腾讯云 CloudBase HTTP 访问服务（详见 [路书_真AI接入运行手册.md](./路书_真AI接入运行手册.md)）。
+### 自建代理（可选，用于自有部署）
+若你自托管路书，可用以下任一 Serverless 代理持有 Key（与云函数同款契约，前端无需改代码）：
+- **Cloudflare Worker**：[`llm-proxy/worker-v2.js`](./llm-proxy/worker-v2.js) 粘贴即部署，绑定 `DEEPSEEK_API_KEY` 变量 → 在页面控制台执行
+  `localStorage.setItem('roadbook_llm_endpoint', '你的Worker地址')` 后硬刷新即点亮。
+- **Vercel Edge**：[`llm-proxy/vercel-api-llm.js`](./llm-proxy/vercel-api-llm.js) 放到仓库 `api/llm.js`。
+- **腾讯云 CloudBase**：详见 [路书_真AI接入运行手册.md](./路书_真AI接入运行手册.md)。
 
 ### 前端调用层
-
-- `src/services/llm.ts`：`callLLM(system, messages)` 统一调用，失败返回 `null`
-- 构建期可用 `.env` 的 `VITE_LLM_ENDPOINT`（见 `.env.example`），或运行时 `roadbook_llm_endpoint`（localStorage，优先）
+- `src/services/llm.ts`：`callLLM(system, messages)` 统一调用，失败返回 `null` → fixture 回退。
+- 优先级：本地 `localStorage.roadbook_deepseek_key` 直连 → 默认云端代理 `roadbook_llm_proxy` → fixture 回退。
 
 ## 五、项目结构
 

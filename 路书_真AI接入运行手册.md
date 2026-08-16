@@ -9,16 +9,18 @@
 
 | 模块 | 文件 | 作用 |
 |---|---|---|
-| 网关云函数 | `cloudfunctions/api-llm/index.js` | DeepSeek 代理，CORS + 集成响应 + 双保险读密钥 + 25s 超时 |
-| 网关配置 | `cloudfunctions/api-llm/config.json` | `timeout:60` + `env.DEEPSEEK_API_KEY` 占位 |
-| 前端调用层 | `src/services/llm.ts` | `callLLM(system, messages)`，读 `VITE_LLM_ENDPOINT`，失败返回 null |
+| 网关云函数 | `cloudfunctions/api-llm/index.js` | DeepSeek 代理，CORS + 集成响应 + 双保险读密钥 + 25s 超时 + 轻量 IP 频率限制（best-effort，见下文说明） |
+| 网关配置 | `cloudfunctions/api-llm/config.json` | `timeout:60` + `env.DEEPSEEK_API_KEY`（仅服务端，前端不接触） |
+| 前端调用层 | `src/services/llm.ts` | `callLLM(system, messages)`；默认走云端代理 `CLOUDBASE_PROXY`，失败返回 null → fixture 回退 |
 | 与前人聊聊 | `src/pages/CasePages.tsx` | grounded system prompt（仅限公开资料）→ 真 LLM；失败回退 `groundedReply` |
 | 未来分岔 | `src/pages/ForkSimPage.tsx` | 基于用户画像生成「AI 实时生成·个性化」卡片；失败隐藏卡片 |
 | 样本标注 | `src/components/BookShelf.tsx` + `LibraryHomePage.tsx` | 每本书标「演示样本」/「真实内测」徽章 + 顶部说明条 |
 | 真实内测槽 | `src/data/realBetaCases.ts` | 空数组 + 模板，待填经授权脱敏的真实故事（`source_marker:'real_beta'`） |
 | 类型 | `src/data/types.ts` | `SourceMarker` 增加 `'real_beta'` |
 
-> **🔑 当前 Key 状态（2026-08-15 轮换）**：`cloudfunctions/api-llm/config.json` 已更新为当前有效 Key（`sk-c38b...c8e`）。注意：**Cloudflare Worker 变量里若仍绑着旧 Key（已删/错配），真 AI 不会通**——必须在 Cloudflare 后台把 `DEEPSEEK_API_KEY` 变量值也换成同一把新 Key 并重新 Deploy。本地文件只用于腾讯云路径备用，不能直接点亮外部的 Worker。
+> **🔑 当前 Key 状态（2026-08-16 轮换 + 安全加固）**：DeepSeek Key **仅存于 `cloudfunctions/api-llm/config.json`（服务端）**，前端 bundle 已彻底移除硬编码（2026-08-16 泄露事故后重写 Git 历史清除残留）。**前端默认走云端代理 `https://<环境>.service.tcloudbase.com/api-llm`**，官方 Demo 开箱即得真 AI，无需任何配置。若自建 Cloudflare / Vercel 代理，记得在其变量里绑定自己的 Key 并 Deploy。
+
+> **⚠️ 频率限制说明（best-effort）**：云函数内置了基于客户端 IP 的 60s 滑动窗口（默认每 IP 每分钟 30 次）。但腾讯云 HTTP 访问服务的云函数每次调用多为独立实例、实例内存不跨调用保持，因此该限制仅能挡住「同一实例突发」，并非跨实例强限制。真正的强防护靠两点：① Key 只在服务端、可即时轮换（怀疑被滥用时在 `config.json` 改 Key 并重部署即可）；② 如需硬限流，建议在 CloudBase 网关层配额度，或在函数内接入 CloudBase 数据库做共享计数。当前比赛演示窗口下，服务端密钥 + 可轮换已足够。
 
 ---
 
@@ -55,7 +57,7 @@
    - `config.json` 的 `env.DEEPSEEK_API_KEY` **已预填好你的 DeepSeek Key**，无需再填（密钥只存服务端，不进前端 bundle）。
    - 该函数用 Node 内置 `https`，**无需任何 npm 依赖**，可直接部署。
 5. **开 HTTP 访问服务**：云开发控制台 → **HTTP 访问服务** → 新增路径 `/api-llm` → 指向函数 `api-llm` → 得到 `https://<环境ID>.service.tcloudbase.com/api-llm`。
-6. **填前端 + 重新构建部署**：`.env` 写入 `VITE_LLM_ENDPOINT=...` → `npm run build` → 部署 dist。
+6. **（可选）填前端 + 重新构建部署**：前端 `src/services/llm.ts` 已把该地址设为 `CLOUDBASE_PROXY` 默认值，**一般情况无需改 `.env` 即可直接用**。仅当你要用自有代理时才在 `.env` 写 `VITE_LLM_ENDPOINT=...` 后 `npm run build` 部署。
 
 > 以上两种方案，最终都靠 `roadbook_llm_endpoint`（localStorage）或 `VITE_LLM_ENDPOINT`（构建期）点亮，应用逻辑一致。
 
@@ -66,7 +68,7 @@
 ## 三、演示前自检清单
 
 - [ ] 网关地址能从浏览器 `curl -X POST .../api-llm -d '{"system":"你是助手","messages":[{"role":"user","content":"你好"}]}'` 拿到 `{"reply":"..."}`
-- [ ] 前端 `.env` 的 `VITE_LLM_ENDPOINT` 已填且重新构建
+- [ ] （可选）若要换自有代理：前端 `.env` 的 `VITE_LLM_ENDPOINT` 已填且重新构建；默认云端代理无需此步
 - [ ] 手机端硬刷新（Cmd/Ctrl+Shift+R）加载新包
 - [ ] 断网 / 错 key 情况下，聊路仍能回退 fixture、不白屏（即「演示永不崩」）
 
