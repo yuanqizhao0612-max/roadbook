@@ -2,7 +2,7 @@
 
 > 版本：V0.9.9（名人图书馆 · 学习模式版，已上线） ｜ 赛道：Boundless Agents 无界应用 · AI+教育（个性化成长学习 Agent）
 > 可运行 Demo：https://4b441fc3a92f4864b857aebbb469da0f.app.workbuddy.link（扫码即体验，无需登录安装）
-> 配套方案 PPT：路书_GOAI参赛PPT_V4_初赛方案版.pptx（17 页）｜ 演示录屏脚本：见「录屏脚本」章节
+> 配套方案 PPT：路书_GOAI参赛PPT_V4_初赛方案版.pptx（18 页，已同步 V0.9.9 版本号与新能力）｜ 演示录屏脚本：见「录屏脚本」章节
 > 开源仓库：https://github.com/yuanqizhao0612-max/roadbook（Apache-2.0，含 README / 部署指南 / 合规声明）
 
 ---
