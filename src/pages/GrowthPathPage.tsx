@@ -233,7 +233,7 @@ ${skillsText || '（用户没有读过有技能记录的书）'}
     setLoading(true)
     setError(false)
     setResult(null)
-    callLLM(PATH_SYSTEM, [{ role: 'user', content: userMsg }], { timeoutMs: 30000, maxTokens: 2000 })
+    callLLM(PATH_SYSTEM, [{ role: 'user', content: userMsg }], { timeoutMs: 55000, maxTokens: 2000 })
       .then(reply => {
         if (!aliveRef.current || seq !== reqSeqRef.current) return
         if (!reply) { setError(true); setLoading(false); return }

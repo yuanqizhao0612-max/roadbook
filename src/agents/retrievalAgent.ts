@@ -252,7 +252,7 @@ async function llmPickRelevant(cands: NormCase[], userText: string): Promise<{ i
 - 最多返回 6 条（最相关的在前），都不相关就返回空数组 []。
 - 判断相关度时看"核心矛盾是否相似"，不要只看行业/岗位是否匹配。`
   const user = `用户困惑：\n${userText}\n\n路书候选：\n${list}`
-  const reply = await callLLM(system, [{ role: 'user', content: user }], { timeoutMs: 18000 })
+  const reply = await callLLM(system, [{ role: 'user', content: user }], { timeoutMs: 30000 })
   if (!reply) return null
   try {
     const cleaned = reply.replace(/```json/gi, '').replace(/```/g, '').trim()

@@ -86,7 +86,7 @@ export default function InsightDistillPage({ state, setState, goTo }: PageCtx) {
     const userMsg = `用户当下的困惑：${userProblem}\n\n这本书的主人：${bookCase.who}\nTA 当时面对的问题：${bookCase.title}\nTA 的选择：${bookCase.one_line_choice}\n最值得避开的坑：${bookCase.biggest_pitfall}\n\n时间轴：\n${timelineText}`
 
     setLoading(true)
-    callLLM(DISTILL_SYSTEM, [{ role: 'user', content: userMsg }], { timeoutMs: 30000, maxTokens: 900 })
+    callLLM(DISTILL_SYSTEM, [{ role: 'user', content: userMsg }], { timeoutMs: 55000, maxTokens: 900 })
       .then(reply => {
         if (!alive) return
         if (!reply) { setError(true); setLoading(false); return }

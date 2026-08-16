@@ -86,7 +86,7 @@ function postJSON(url, data, timeoutMs) {
       })
     })
     req.on('error', reject)
-    req.setTimeout(timeoutMs || 25000, () => req.destroy(new Error('TIMEOUT')))
+    req.setTimeout(timeoutMs || 55000, () => req.destroy(new Error('TIMEOUT')))
     req.write(payload)
     req.end()
   })
@@ -123,7 +123,7 @@ exports.main = async (event) => {
       messages: [{ role: 'system', content: system }, ...messages],
       temperature: 0.7,
       max_tokens: 600
-    }, 25000)
+    }, 55000)
     const reply =
       data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
     return resp(200, { reply: reply || null })

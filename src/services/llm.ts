@@ -80,7 +80,7 @@ async function callDirect(key: string, system: string, messages: LlmMsg[], opts:
 
 async function callViaProxy(proxy: string, system: string, messages: LlmMsg[], opts: { timeoutMs?: number; maxTokens?: number }): Promise<string | null> {
   const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 15000)
+  const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 30000)
   try {
     const res = await fetch(proxy, {
       method: 'POST',

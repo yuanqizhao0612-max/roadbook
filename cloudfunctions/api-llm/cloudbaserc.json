@@ -1,0 +1,12 @@
+{
+  "envId": "cloud1-d4g2xd1xsd3a55120",
+  "functions": [
+    {
+      "name": "api-llm",
+      "timeout": 60,
+      "memorySize": 256,
+      "runtime": "Nodejs20.19",
+      "handler": "index.main"
+    }
+  ]
+}
